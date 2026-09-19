@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router";
 import { PROBLEMS } from "../data/problems";
 import Navbar from "../components/Navbar";
@@ -8,6 +8,7 @@ import ProblemDescription from "../components/ProblemDescription";
 import OutputPanel from "../components/OutputPanel";
 import CodeEditorPanel from "../components/CodeEditorPanel";
 import { executeCode } from "../lib/compiler";
+import axiosInstance from "../lib/axios";
 
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
@@ -16,13 +17,36 @@ function ProblemPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [currentProblemId, setCurrentProblemId] = useState("two-sum");
+  const [currentProblemId, setCurrentProblemId] = useState(id && PROBLEMS[id] ? id : "two-sum");
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
-  const [code, setCode] = useState(PROBLEMS[currentProblemId].starterCode.javascript);
+  const [code, setCode] = useState(
+    PROBLEMS[id && PROBLEMS[id] ? id : "two-sum"].starterCode.javascript
+  );
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Submissions state
+  const [submissions, setSubmissions] = useState([]);
+  const [isLoadingSubmissions, setIsLoadingSubmissions] = useState(false);
+  const [activeTab, setActiveTab] = useState("description");
 
   const currentProblem = PROBLEMS[currentProblemId];
+
+  // Fetch submission history for the current problem
+  const fetchSubmissions = useCallback(async (problemId) => {
+    try {
+      setIsLoadingSubmissions(true);
+      const { data } = await axiosInstance.get(`/submissions/${problemId}`);
+      if (data && data.submissions) {
+        setSubmissions(data.submissions);
+      }
+    } catch (err) {
+      console.warn("Could not fetch submission history:", err?.message);
+    } finally {
+      setIsLoadingSubmissions(false);
+    }
+  }, []);
 
   // update problem when URL param changes
   useEffect(() => {
@@ -30,8 +54,9 @@ function ProblemPage() {
       setCurrentProblemId(id);
       setCode(PROBLEMS[id].starterCode[selectedLanguage]);
       setOutput(null);
+      fetchSubmissions(id);
     }
-  }, [id, selectedLanguage]);
+  }, [id, selectedLanguage, fetchSubmissions]);
 
   const handleLanguageChange = (e) => {
     const newLang = e.target.value;
@@ -56,18 +81,16 @@ function ProblemPage() {
     });
   };
 
-  const normalizeOutput = (output) => {
-    // normalize output for comparison (trim whitespace, handle different spacing)
-    return output
+  const normalizeOutput = (out) => {
+    if (!out) return "";
+    return out
       .trim()
       .split("\n")
       .map((line) =>
         line
           .trim()
-          // remove spaces after [ and before ]
           .replace(/\[\s+/g, "[")
           .replace(/\s+\]/g, "]")
-          // normalize spaces around commas to single space after comma
           .replace(/\s*,\s*/g, ",")
       )
       .filter((line) => line.length > 0)
@@ -77,10 +100,10 @@ function ProblemPage() {
   const checkIfTestsPassed = (actualOutput, expectedOutput) => {
     const normalizedActual = normalizeOutput(actualOutput);
     const normalizedExpected = normalizeOutput(expectedOutput);
-
-    return normalizedActual == normalizedExpected;
+    return normalizedActual === normalizedExpected;
   };
 
+  // Run Code Handler
   const handleRunCode = async () => {
     setIsRunning(true);
     setOutput(null);
@@ -89,20 +112,69 @@ function ProblemPage() {
     setOutput(result);
     setIsRunning(false);
 
-    // check if code executed successfully and matches expected output
-
     if (result.success) {
       const expectedOutput = currentProblem.expectedOutput[selectedLanguage];
       const testsPassed = checkIfTestsPassed(result.output, expectedOutput);
 
       if (testsPassed) {
-        triggerConfetti();
-        toast.success("All tests passed! Great job!");
+        toast.success("All test cases passed!");
       } else {
-        toast.error("Tests failed. Check your output!");
+        toast.error("Output did not match expected test results.");
       }
     } else {
-      toast.error(`Code execution failed: ${result.error || 'Unknown error'}`);
+      toast.error(`Code execution failed: ${result.error || "Unknown error"}`);
+    }
+  };
+
+  // Submit Code Handler (LeetCode Style)
+  const handleSubmitCode = async () => {
+    setIsSubmitting(true);
+    setOutput(null);
+    const startTime = performance.now();
+
+    const result = await executeCode(selectedLanguage, code);
+    const executionDuration = Math.round(performance.now() - startTime);
+
+    setOutput(result);
+
+    let status = "Compile Error";
+
+    if (result.success) {
+      const expectedOutput = currentProblem.expectedOutput[selectedLanguage];
+      const testsPassed = checkIfTestsPassed(result.output, expectedOutput);
+      status = testsPassed ? "Accepted" : "Wrong Answer";
+    }
+
+    // Persist submission to MongoDB backend
+    try {
+      await axiosInstance.post("/submissions", {
+        problemId: currentProblemId,
+        language: selectedLanguage,
+        code,
+        status,
+        runtime: executionDuration,
+        output: result.output || "",
+        error: result.error || "",
+      });
+
+      // Refresh history list
+      await fetchSubmissions(currentProblemId);
+    } catch (saveErr) {
+      console.error("Failed to persist submission to database:", saveErr);
+    } finally {
+      setIsSubmitting(false);
+    }
+
+    // Feedback
+    if (status === "Accepted") {
+      triggerConfetti();
+      toast.success("Submission Accepted! Great job!");
+      setActiveTab("submissions");
+    } else if (status === "Wrong Answer") {
+      toast.error("Submission Failed: Wrong Answer.");
+      setActiveTab("submissions");
+    } else {
+      toast.error(`Submission Error: ${result.error || "Execution failed"}`);
     }
   };
 
@@ -112,19 +184,23 @@ function ProblemPage() {
 
       <div className="flex-1 overflow-hidden">
         <PanelGroup direction="horizontal">
-          {/* left panel- problem desc */}
+          {/* Left panel - problem description & submission history */}
           <Panel defaultSize={40} minSize={30}>
             <ProblemDescription
               problem={currentProblem}
               currentProblemId={currentProblemId}
               onProblemChange={handleProblemChange}
               allProblems={Object.values(PROBLEMS)}
+              submissions={submissions}
+              isLoadingSubmissions={isLoadingSubmissions}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
             />
           </Panel>
 
           <PanelResizeHandle className="w-2 bg-base-300 hover:bg-primary transition-colors cursor-col-resize" />
 
-          {/* right panel- code editor & output */}
+          {/* Right panel - code editor & output */}
           <Panel defaultSize={60} minSize={30}>
             <PanelGroup direction="vertical">
               {/* Top panel - Code editor */}
@@ -133,16 +209,17 @@ function ProblemPage() {
                   selectedLanguage={selectedLanguage}
                   code={code}
                   isRunning={isRunning}
+                  isSubmitting={isSubmitting}
                   onLanguageChange={handleLanguageChange}
                   onCodeChange={setCode}
                   onRunCode={handleRunCode}
+                  onSubmitCode={handleSubmitCode}
                 />
               </Panel>
 
               <PanelResizeHandle className="h-2 bg-base-300 hover:bg-primary transition-colors cursor-row-resize" />
 
               {/* Bottom panel - Output Panel*/}
-
               <Panel defaultSize={30} minSize={30}>
                 <OutputPanel output={output} />
               </Panel>
