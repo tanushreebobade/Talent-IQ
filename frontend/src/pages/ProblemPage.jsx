@@ -9,6 +9,7 @@ import OutputPanel from "../components/OutputPanel";
 import CodeEditorPanel from "../components/CodeEditorPanel";
 import { executeCode } from "../lib/compiler";
 import axiosInstance from "../lib/axios";
+import { useWindowSize } from "../hooks/useWindowSize";
 
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
@@ -16,6 +17,8 @@ import confetti from "canvas-confetti";
 function ProblemPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { width } = useWindowSize();
+  const isMobile = width < 768;
 
   const [currentProblemId, setCurrentProblemId] = useState(id && PROBLEMS[id] ? id : "two-sum");
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
@@ -179,13 +182,13 @@ function ProblemPage() {
   };
 
   return (
-    <div className="h-screen bg-base-100 flex flex-col overflow-hidden">
+    <div className="min-h-screen md:h-screen bg-base-100 flex flex-col overflow-x-hidden md:overflow-hidden">
       <Navbar />
 
-      <div className="flex-1 overflow-hidden">
-        <PanelGroup direction="horizontal">
+      <div className="flex-1 overflow-x-hidden md:overflow-hidden">
+        <PanelGroup key={isMobile ? "mobile" : "desktop"} direction={isMobile ? "vertical" : "horizontal"}>
           {/* Left panel - problem description & submission history */}
-          <Panel defaultSize={40} minSize={30}>
+          <Panel defaultSize={isMobile ? 50 : 40} minSize={25}>
             <ProblemDescription
               problem={currentProblem}
               currentProblemId={currentProblemId}
@@ -198,10 +201,10 @@ function ProblemPage() {
             />
           </Panel>
 
-          <PanelResizeHandle className="w-2 bg-base-300 hover:bg-primary transition-colors cursor-col-resize" />
+          <PanelResizeHandle className={isMobile ? "h-2 bg-base-300 hover:bg-primary transition-colors cursor-row-resize" : "w-2 bg-base-300 hover:bg-primary transition-colors cursor-col-resize"} />
 
           {/* Right panel - code editor & output */}
-          <Panel defaultSize={60} minSize={30}>
+          <Panel defaultSize={isMobile ? 50 : 60} minSize={25}>
             <PanelGroup direction="vertical">
               {/* Top panel - Code editor */}
               <Panel defaultSize={70} minSize={30}>
@@ -220,7 +223,7 @@ function ProblemPage() {
               <PanelResizeHandle className="h-2 bg-base-300 hover:bg-primary transition-colors cursor-row-resize" />
 
               {/* Bottom panel - Output Panel*/}
-              <Panel defaultSize={30} minSize={30}>
+              <Panel defaultSize={30} minSize={20}>
                 <OutputPanel output={output} />
               </Panel>
             </PanelGroup>

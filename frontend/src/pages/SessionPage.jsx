@@ -13,11 +13,14 @@ import OutputPanel from "../components/OutputPanel";
 import useStreamClient from "../hooks/useStreamClient";
 import { StreamCall, StreamVideo } from "@stream-io/video-react-sdk";
 import VideoCallUI from "../components/VideoCallUI";
+import { useWindowSize } from "../hooks/useWindowSize";
 
 function SessionPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { user } = useUser();
+  const { width } = useWindowSize();
+  const isMobile = width < 768;
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -104,11 +107,11 @@ function SessionPage() {
   };
 
   return (
-    <div className="h-screen bg-[#fcfcfc] dark:bg-[#1a1e1d] text-[#222b2a] dark:text-zinc-100 flex flex-col font-sans transition-colors overflow-hidden">
+    <div className="min-h-screen md:h-screen bg-[#fcfcfc] dark:bg-[#1a1e1d] text-[#222b2a] dark:text-zinc-100 flex flex-col font-sans transition-colors overflow-x-hidden md:overflow-hidden">
       <Navbar />
 
-      <div className="flex-1 overflow-hidden">
-        <PanelGroup direction="horizontal">
+      <div className="flex-1 overflow-x-hidden md:overflow-hidden">
+        <PanelGroup key={isMobile ? "mobile" : "desktop"} direction={isMobile ? "vertical" : "horizontal"}>
           {/* LEFT PANEL - CODE EDITOR & PROBLEM DETAILS */}
           <Panel defaultSize={55} minSize={35}>
             <PanelGroup direction="vertical">
