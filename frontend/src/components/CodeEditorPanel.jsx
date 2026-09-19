@@ -11,9 +11,9 @@ function CodeEditorPanel({
   onRunCode,
 }) {
   return (
-    <div className="h-full bg-[#1a1e1d] flex flex-col">
+    <div className="h-full bg-[#1a1e1d] flex flex-col overflow-hidden min-w-0">
       {/* Panel Header Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-[#171a19] border-b border-white/10 shrink-0">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-[#171a19] border-b border-white/10 shrink-0 gap-2">
         <div className="flex items-center gap-2.5">
           <img
             src={LANGUAGE_CONFIG[selectedLanguage].icon}

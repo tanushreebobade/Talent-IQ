@@ -1,81 +1,92 @@
-// OneCompiler API is a service for code execution
+import axiosInstance from "./axios";
 
-const ONECOMPILER_API = "https://api.onecompiler.com/v1/run";
-const API_KEY = import.meta.env.VITE_ONLINE_COMPILER_API_KEY;
+const JUDGE0_API = "https://ce.judge0.com/submissions?base64_encoded=false&wait=true";
 
-const LANGUAGE_MAP = {
-  javascript: { language: "nodejs", extension: "js" },
-  python: { language: "python", extension: "py" },
-  java: { language: "java", extension: "java" },
+const JUDGE0_LANG_MAP = {
+  javascript: 63,
+  python: 71,
+  cpp: 54,
+  java: 62,
 };
 
 /**
- * @param {string} language - programming language
+ * Executes code via backend compiler service /api/code/run.
+ * Falls back to direct client-side call to Judge0 CE if backend is unreachable.
+ *
+ * @param {string} language - programming language (javascript, python, java, cpp)
  * @param {string} code - source code to execute
  * @returns {Promise<{success:boolean, output?:string, error?: string}>}
  */
 export async function executeCode(language, code) {
-  try {
-    const languageConfig = LANGUAGE_MAP[language];
-
-    if (!languageConfig) {
-      return {
-        success: false,
-        error: `Unsupported language: ${language}`,
-      };
-    }
-
-    const response = await fetch(ONECOMPILER_API, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-Key": API_KEY,
-      },
-      body: JSON.stringify({
-        language: languageConfig.language,
-        files: [
-          {
-            name: `main.${languageConfig.extension}`,
-            content: code,
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: `HTTP error! status: ${response.status}`,
-      };
-    }
-
-    const data = await response.json();
-
-    if (data.status !== "success") {
-       return {
-        success: false,
-        output: data.stdout || "",
-        error: data.exception || data.stderr || "Execution failed",
-      };
-    }
-
-    const stderr = data.stderr || "";
-    if (stderr) {
-      return {
-        success: false,
-        output: data.stdout || "",
-        error: stderr,
-      };
-    }
-
-    return {
-      success: true,
-      output: data.stdout || "No output",
-    };
-  } catch (error) {
+  const sanitizedCode = typeof code === "string" ? code.trim() : "";
+  if (!sanitizedCode) {
     return {
       success: false,
-      error: `Failed to execute code: ${error.message}`,
+      error: "Source code cannot be empty.",
     };
   }
+
+  const normalizedLang = (language || "").toLowerCase().trim();
+
+  // 1. Primary: Call backend compiler route /api/code/run
+  try {
+    const { data } = await axiosInstance.post("/code/run", {
+      language: normalizedLang,
+      code: sanitizedCode,
+    });
+    if (data && typeof data.success === "boolean") {
+      return data;
+    }
+  } catch (backendError) {
+    console.warn("Backend compiler route unreachable, trying direct Judge0 call:", backendError?.message);
+  }
+
+  // 2. Fallback: Direct client call to Judge0 CE API (supports browser CORS)
+  const languageId = JUDGE0_LANG_MAP[normalizedLang];
+  if (!languageId) {
+    return {
+      success: false,
+      error: `Unsupported language: ${language}`,
+    };
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+    const response = await fetch(JUDGE0_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        source_code: sanitizedCode,
+        language_id: languageId,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (response.ok) {
+      const data = await response.json();
+      const stdout = data.stdout || "";
+      const stderr = data.stderr || data.compile_output || "";
+
+      if (stderr && !stdout) {
+        return { success: false, output: "", error: stderr.trim() };
+      }
+
+      return {
+        success: true,
+        output: stdout ? stdout.trim() : "No output",
+        error: stderr ? stderr.trim() : undefined,
+      };
+    }
+  } catch (clientError) {
+    console.error("Direct Judge0 client execution failed:", clientError);
+  }
+
+  return {
+    success: false,
+    error: "Failed to execute code. Please check your connection and try again.",
+  };
 }

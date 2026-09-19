@@ -104,7 +104,7 @@ function SessionPage() {
   };
 
   return (
-    <div className="h-screen bg-[#fcfcfc] dark:bg-[#1a1e1d] text-[#222b2a] dark:text-zinc-100 flex flex-col font-sans transition-colors">
+    <div className="h-screen bg-[#fcfcfc] dark:bg-[#1a1e1d] text-[#222b2a] dark:text-zinc-100 flex flex-col font-sans transition-colors overflow-hidden">
       <Navbar />
 
       <div className="flex-1 overflow-hidden">

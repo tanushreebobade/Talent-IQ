@@ -9,7 +9,7 @@ function Navbar() {
 
   return (
     <nav className="bg-[#fcfcfc]/95 dark:bg-[#1a1e1d]/95 backdrop-blur-sm border-b border-[#222b2a]/10 dark:border-white/10 sticky top-0 z-50 transition-colors">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div className="w-full px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* LOGO */}
         <Link
           to="/"
