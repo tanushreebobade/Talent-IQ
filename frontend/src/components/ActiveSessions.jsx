@@ -1,109 +1,121 @@
-import {
-  ArrowRightIcon,
-  Code2Icon,
-  CrownIcon,
-  SparklesIcon,
-  UsersIcon,
-  ZapIcon,
-  LoaderIcon,
-} from "lucide-react";
 import { Link } from "react-router";
-import { getDifficultyBadgeClass } from "../lib/utils";
 
-function ActiveSessions({ sessions, isLoading, isUserInSession }) {
+function ActiveSessions({ sessions, isLoading, isUserInSession, onCreateSession }) {
+  const getDifficultyColor = (diff) => {
+    switch (diff?.toLowerCase()) {
+      case "easy":
+        return "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+      case "medium":
+        return "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20";
+      case "hard":
+        return "text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20";
+      default:
+        return "text-zinc-600 dark:text-zinc-400 bg-zinc-500/10 border-zinc-500/20";
+    }
+  };
+
   return (
-    <div className="lg:col-span-2 card bg-base-100 border-2 border-primary/20 hover:border-primary/30 h-full">
-      <div className="card-body">
-        {/* HEADERS SECTION */}
-        <div className="flex items-center justify-between mb-6">
-          {/* TITLE AND ICON */}
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-primary to-secondary rounded-xl">
-              <ZapIcon className="size-5" />
-            </div>
-            <h2 className="text-2xl font-black">Live Sessions</h2>
-          </div>
+    <div className="py-6">
+      {/* SECTION HEADER */}
+      <div className="flex items-center justify-between pb-3 border-b border-[#222b2a]/10 dark:border-white/10 mb-2">
+        <h2 className="text-lg font-bold text-[#222b2a] dark:text-white tracking-tight">
+          Live Sessions
+        </h2>
+        <span className="text-xs font-medium text-[#222b2a]/60 dark:text-zinc-400">
+          {sessions.length} active
+        </span>
+      </div>
 
-          <div className="flex items-center gap-2">
-            <div className="size-2 bg-success rounded-full" />
-            <span className="text-sm font-medium text-success">{sessions.length} active</span>
-          </div>
-        </div>
-
-        {/* SESSIONS LIST */}
-        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <LoaderIcon className="size-10 animate-spin text-primary" />
-            </div>
-          ) : sessions.length > 0 ? (
-            sessions.map((session) => (
+      {/* SESSIONS LIST */}
+      <div>
+        {isLoading ? (
+          /* Subtle Skeleton Rows */
+          <div className="space-y-3 py-2">
+            {[1, 2].map((i) => (
               <div
-                key={session._id}
-                className="card bg-base-200 border-2 border-base-300 hover:border-primary/50"
+                key={i}
+                className="py-3 px-1 animate-pulse flex items-center justify-between border-b border-[#222b2a]/5 dark:border-white/5"
               >
-                <div className="flex items-center justify-between gap-4 p-5">
-                  {/* LEFT SIDE */}
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="relative size-14 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                      <Code2Icon className="size-7 text-white" />
-                      <div className="absolute -top-1 -right-1 size-4 bg-success rounded-full border-2 border-base-100" />
+                <div className="space-y-2">
+                  <div className="h-4 w-48 bg-[#222b2a]/10 dark:bg-white/10 rounded"></div>
+                  <div className="h-3 w-32 bg-[#222b2a]/5 dark:bg-white/5 rounded"></div>
+                </div>
+                <div className="h-4 w-16 bg-[#222b2a]/10 dark:bg-white/10 rounded"></div>
+              </div>
+            ))}
+          </div>
+        ) : sessions.length > 0 ? (
+          <div className="divide-y divide-[#222b2a]/10 dark:divide-white/10">
+            {sessions.map((session) => {
+              const isFull = session.participant && !isUserInSession(session);
+              const userInThis = isUserInSession(session);
+
+              return (
+                <div
+                  key={session._id}
+                  className="py-3.5 px-2 hover:bg-[#222b2a]/[0.02] dark:hover:bg-white/[0.02] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                >
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <h3 className="font-semibold text-sm text-[#222b2a] dark:text-white truncate">
+                        {session.problem}
+                      </h3>
+                      <span
+                        className={`text-[11px] font-medium px-2 py-0.5 rounded border capitalize ${getDifficultyColor(
+                          session.difficulty
+                        )}`}
+                      >
+                        {session.difficulty}
+                      </span>
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-bold text-lg truncate">{session.problem}</h3>
-                        <span
-                          className={`badge badge-sm ${getDifficultyBadgeClass(
-                            session.difficulty
-                          )}`}
-                        >
-                          {session.difficulty.slice(0, 1).toUpperCase() +
-                            session.difficulty.slice(1)}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-4 text-sm opacity-80">
-                        <div className="flex items-center gap-1.5">
-                          <CrownIcon className="size-4" />
-                          <span className="font-medium">{session.host?.name}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <UsersIcon className="size-4" />
-                          <span className="text-xs">{session.participant ? "2/2" : "1/2"}</span>
-                        </div>
-                        {session.participant && !isUserInSession(session) ? (
-                          <span className="badge badge-error badge-sm">FULL</span>
-                        ) : (
-                          <span className="badge badge-success badge-sm">OPEN</span>
-                        )}
-                      </div>
+                    <div className="flex items-center gap-3 text-xs text-[#222b2a]/60 dark:text-zinc-400">
+                      <span>Host: {session.host?.name || "Anonymous"}</span>
+                      <span>·</span>
+                      <span>{session.participant ? "2 participants" : "1 participant"}</span>
+                      <span>·</span>
+                      <span className={isFull ? "text-rose-500 font-medium" : "text-[#83a971] font-medium"}>
+                        {isFull ? "Full" : "Open"}
+                      </span>
                     </div>
                   </div>
 
-                  {session.participant && !isUserInSession(session) ? (
-                    <button className="btn btn-disabled btn-sm">Full</button>
-                  ) : (
-                    <Link to={`/session/${session._id}`} className="btn btn-primary btn-sm gap-2">
-                      {isUserInSession(session) ? "Rejoin" : "Join"}
-                      <ArrowRightIcon className="size-4" />
-                    </Link>
-                  )}
+                  <div className="shrink-0 self-end sm:self-center">
+                    {isFull ? (
+                      <span className="text-xs font-medium text-zinc-400">Full</span>
+                    ) : (
+                      <Link
+                        to={`/session/${session._id}`}
+                        className="text-xs font-semibold text-[#83a971] hover:text-[#729860] transition-colors inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
+                      >
+                        <span>{userInThis ? "Rejoin" : "Join"}</span>
+                        <span>→</span>
+                      </Link>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-16">
-              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-3xl flex items-center justify-center">
-                <SparklesIcon className="w-10 h-10 text-primary/50" />
-              </div>
-              <p className="text-lg font-semibold opacity-70 mb-1">No active sessions</p>
-              <p className="text-sm opacity-50">Be the first to create one!</p>
-            </div>
-          )}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* Compact Empty State */
+          <div className="py-4 text-left flex items-center justify-between">
+            <p className="text-sm font-medium text-[#222b2a]/60 dark:text-zinc-400">
+              No active sessions right now.
+            </p>
+            {onCreateSession && (
+              <button
+                onClick={onCreateSession}
+                className="text-xs font-semibold text-[#83a971] hover:underline inline-flex items-center gap-1"
+              >
+                <span>+ Create Session</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
 export default ActiveSessions;

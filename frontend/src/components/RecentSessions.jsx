@@ -1,100 +1,95 @@
-import { Code2, Clock, Users, Trophy, Loader } from "lucide-react";
-import { getDifficultyBadgeClass } from "../lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
 function RecentSessions({ sessions, isLoading }) {
-  return (
-    <div className="card bg-base-100 border-2 border-accent/20 hover:border-accent/30 mt-8">
-      <div className="card-body">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-gradient-to-br from-accent to-secondary rounded-xl">
-            <Clock className="w-5 h-5 text-white" />
-          </div>
-          <h2 className="text-2xl font-black">Your Past Sessions</h2>
-        </div>
+  const getDifficultyColor = (diff) => {
+    switch (diff?.toLowerCase()) {
+      case "easy":
+        return "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+      case "medium":
+        return "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20";
+      case "hard":
+        return "text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20";
+      default:
+        return "text-zinc-600 dark:text-zinc-400 bg-zinc-500/10 border-zinc-500/20";
+    }
+  };
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {isLoading ? (
-            <div className="col-span-full flex items-center justify-center py-20">
-              <Loader className="w-10 h-10 animate-spin text-primary" />
-            </div>
-          ) : sessions.length > 0 ? (
-            sessions.map((session) => (
+  return (
+    <div className="py-6">
+      {/* HEADER */}
+      <div className="flex items-center justify-between pb-3 border-b border-[#222b2a]/10 dark:border-white/10 mb-2">
+        <h2 className="text-lg font-bold text-[#222b2a] dark:text-white tracking-tight">
+          Past Sessions
+        </h2>
+      </div>
+
+      {/* SESSIONS LIST */}
+      <div>
+        {isLoading ? (
+          /* Subtle Skeleton Rows */
+          <div className="space-y-3 py-2">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="py-3 px-1 animate-pulse flex items-center justify-between border-b border-[#222b2a]/5 dark:border-white/5"
+              >
+                <div className="space-y-2">
+                  <div className="h-4 w-40 bg-[#222b2a]/10 dark:bg-white/10 rounded"></div>
+                  <div className="h-3 w-28 bg-[#222b2a]/5 dark:bg-white/5 rounded"></div>
+                </div>
+                <div className="h-3 w-20 bg-[#222b2a]/10 dark:bg-white/10 rounded"></div>
+              </div>
+            ))}
+          </div>
+        ) : sessions.length > 0 ? (
+          <div className="divide-y divide-[#222b2a]/10 dark:divide-white/10">
+            {sessions.map((session) => (
               <div
                 key={session._id}
-                className={`card relative ${
-                  session.status === "active"
-                    ? "bg-success/10 border-success/30 hover:border-success/60"
-                    : "bg-base-200 border-base-300 hover:border-primary/30"
-                }`}
+                className="py-3.5 px-2 hover:bg-[#222b2a]/[0.02] dark:hover:bg-white/[0.02] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
-                {session.status === "active" && (
-                  <div className="absolute top-3 right-3">
-                    <div className="badge badge-success gap-1">
-                      <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
-                      ACTIVE
-                    </div>
-                  </div>
-                )}
-
-                <div className="card-body p-5">
-                  <div className="flex items-start gap-3 mb-4">
-                    <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                        session.status === "active"
-                          ? "bg-gradient-to-br from-success to-success/70"
-                          : "bg-gradient-to-br from-primary to-secondary"
-                      }`}
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h3 className="font-semibold text-sm text-[#222b2a] dark:text-white truncate">
+                      {session.problem}
+                    </h3>
+                    <span
+                      className={`text-[11px] font-medium px-2 py-0.5 rounded border capitalize ${getDifficultyColor(
+                        session.difficulty
+                      )}`}
                     >
-                      <Code2 className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-base mb-1 truncate">{session.problem}</h3>
-                      <span
-                        className={`badge badge-sm ${getDifficultyBadgeClass(session.difficulty)}`}
-                      >
-                        {session.difficulty}
-                      </span>
-                    </div>
+                      {session.difficulty}
+                    </span>
+                    <span className="text-[11px] text-[#222b2a]/50 dark:text-zinc-500">
+                      Completed
+                    </span>
                   </div>
 
-                  <div className="space-y-2 text-sm opacity-80 mb-4">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      <span>
-                        {formatDistanceToNow(new Date(session.createdAt), {
-                          addSuffix: true,
-                        })}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      <span>
-                        {session.participant ? "2" : "1"} participant
-                        {session.participant ? "s" : ""}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-3 border-t border-base-300">
-                    <span className="text-xs font-semibold opacity-80 uppercase">Completed</span>
-                    <span className="text-xs opacity-40">
-                      {new Date(session.updatedAt).toLocaleDateString()}
+                  <div className="flex items-center gap-3 text-xs text-[#222b2a]/60 dark:text-zinc-400">
+                    <span>{session.participant ? "2 participants" : "1 participant"}</span>
+                    <span>·</span>
+                    <span>
+                      {formatDistanceToNow(new Date(session.createdAt), {
+                        addSuffix: true,
+                      })}
                     </span>
                   </div>
                 </div>
+
+                <div className="text-xs text-[#222b2a]/40 dark:text-zinc-500 self-end sm:self-center">
+                  {new Date(session.updatedAt).toLocaleDateString()}
+                </div>
               </div>
-            ))
-          ) : (
-            <div className="col-span-full text-center py-16">
-              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-accent/20 to-secondary/20 rounded-3xl flex items-center justify-center">
-                <Trophy className="w-10 h-10 text-accent/50" />
-              </div>
-              <p className="text-lg font-semibold opacity-70 mb-1">No sessions yet</p>
-              <p className="text-sm opacity-50">Start your coding journey today!</p>
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          /* Compact Empty State */
+          <div className="py-4 text-left">
+            <p className="text-sm font-medium text-[#222b2a]/60 dark:text-zinc-400">
+              No past sessions yet.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,72 +1,61 @@
 import { Link, useLocation } from "react-router";
-import { BookOpenIcon, LayoutDashboardIcon, SparklesIcon } from "lucide-react";
+import { BookOpenIcon, LayoutDashboardIcon } from "lucide-react";
 import { UserButton } from "@clerk/clerk-react";
+import { TalentIQLogo } from "./TalentIQLogo";
 
 function Navbar() {
   const location = useLocation();
-
-  console.log(location);
-
   const isActive = (path) => location.pathname === path;
 
   return (
-    <nav className="bg-base-100/80 backdrop-blur-md border-b border-primary/20 sticky top-0 z-50 shadow-lg">
-      <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
+    <nav className="bg-[#fcfcfc]/95 dark:bg-[#1a1e1d]/95 backdrop-blur-sm border-b border-[#222b2a]/10 dark:border-white/10 sticky top-0 z-50 transition-colors">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* LOGO */}
         <Link
           to="/"
-          className="group flex items-center gap-3 hover:scale-105 transition-transform duration-200"
+          className="flex items-center gap-2.5 hover:opacity-90 transition-opacity"
         >
-          <div className="size-10 rounded-xl bg-gradient-to-r from-primary via-secondary to-accent flex items-center justify-center shadow-lg ">
-            <SparklesIcon className="size-6 text-white" />
-          </div>
-
-          <div className="flex flex-col">
-            <span className="font-black text-xl bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent font-mono tracking-wider">
-              Talent IQ
-            </span>
-            <span className="text-xs text-base-content/60 font-medium -mt-1">Code Together</span>
-          </div>
+          <TalentIQLogo className="w-7 h-7" />
+          <span className="font-bold text-xl tracking-tight flex items-center">
+            <span className="text-[#222b2a] dark:text-white">Talent</span>
+            <span className="text-[#83a971] ml-0.5">IQ</span>
+          </span>
         </Link>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-4 sm:gap-6">
           {/* PROBLEMS PAGE LINK */}
           <Link
-            to={"/problems"}
-            className={`px-4 py-2.5 rounded-lg transition-all duration-200 
-              ${
-                isActive("/problems")
-                  ? "bg-primary text-primary-content"
-                  : "hover:bg-base-200 text-base-content/70 hover:text-base-content"
-              }
-              
-              `}
+            to="/problems"
+            className={`py-5 text-sm font-medium transition-colors flex items-center gap-2 relative ${
+              isActive("/problems")
+                ? "text-[#83a971] font-semibold"
+                : "text-[#222b2a]/70 hover:text-[#222b2a] dark:text-zinc-400 dark:hover:text-white"
+            }`}
           >
-            <div className="flex items-center gap-x-2.5">
-              <BookOpenIcon className="size-4" />
-              <span className="font-medium hidden sm:inline">Problems</span>
-            </div>
+            <BookOpenIcon className="w-4 h-4" />
+            <span className="hidden sm:inline">Problems</span>
+            {isActive("/problems") && (
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#83a971]"></span>
+            )}
           </Link>
 
-          {/* DASHBORD PAGE LINK */}
+          {/* DASHBOARD PAGE LINK */}
           <Link
-            to={"/dashboard"}
-            className={`px-4 py-2.5 rounded-lg transition-all duration-200 
-              ${
-                isActive("/dashboard")
-                  ? "bg-primary text-primary-content"
-                  : "hover:bg-base-200 text-base-content/70 hover:text-base-content"
-              }
-              
-              `}
+            to="/dashboard"
+            className={`py-5 text-sm font-medium transition-colors flex items-center gap-2 relative ${
+              isActive("/dashboard")
+                ? "text-[#83a971] font-semibold"
+                : "text-[#222b2a]/70 hover:text-[#222b2a] dark:text-zinc-400 dark:hover:text-white"
+            }`}
           >
-            <div className="flex items-center gap-x-2.5">
-              <LayoutDashboardIcon className="size-4" />
-              <span className="font-medium hidden sm:inline">Dashbord</span>
-            </div>
+            <LayoutDashboardIcon className="w-4 h-4" />
+            <span className="hidden sm:inline">Dashboard</span>
+            {isActive("/dashboard") && (
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#83a971]"></span>
+            )}
           </Link>
 
-          <div className="ml-4 mt-2">
+          <div className="pl-2 border-l border-[#222b2a]/10 dark:border-white/10 flex items-center">
             <UserButton />
           </div>
         </div>

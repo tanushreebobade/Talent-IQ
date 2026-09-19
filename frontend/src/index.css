@@ -1,12 +1,44 @@
 @import "tailwindcss";
 @plugin "daisyui" {
-  themes: all;
+  themes: light, dark;
 }
 
-/* Add cursor pointer to buttons by default - this is coming from tailwind docs */
+:root {
+  --brand-sage: #83a971;
+  --brand-charcoal: #222b2a;
+}
+
 @layer base {
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+
+  body {
+    background-color: #fcfcfc;
+    color: #222b2a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  }
 }
+
+.dark body {
+  background-color: #1a1e1d;
+  color: #f3f4f6;
+}
+
+/* Scrollbar customization */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(131, 169, 113, 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(131, 169, 113, 0.6);
+}
+

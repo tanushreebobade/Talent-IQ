@@ -1,0 +1,21 @@
+export function TalentIQLogo({ className }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 100 100"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {/* Top Dark Bar */}
+      <path
+        d="M 15 20 H 85 L 60 45 H 15 C 8 45 5 40 5 32.5 C 5 25 8 20 15 20 Z"
+        fill="#222b2a"
+      />
+      {/* Vertical Light Green Stem */}
+      <path
+        d="M 66 50 L 91 25 V 65 C 91 85 80 95 60 95 H 45 C 37 95 35 90 35 85 V 50 Z"
+        fill="#83a971"
+      />
+    </svg>
+  );
+}

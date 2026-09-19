@@ -1,21 +1,22 @@
-// Piston API is a service for code execution
+// OneCompiler API is a service for code execution
 
-const PISTON_API = "https://emkc.org/api/v2/piston";
+const ONECOMPILER_API = "https://api.onecompiler.com/v1/run";
+const API_KEY = import.meta.env.VITE_ONLINE_COMPILER_API_KEY;
 
-const LANGUAGE_VERSIONS = {
-  javascript: { language: "javascript", version: "18.15.0" },
-  python: { language: "python", version: "3.10.0" },
-  java: { language: "java", version: "15.0.2" },
+const LANGUAGE_MAP = {
+  javascript: { language: "nodejs", extension: "js" },
+  python: { language: "python", extension: "py" },
+  java: { language: "java", extension: "java" },
 };
 
 /**
  * @param {string} language - programming language
- * @param {string} code - source code to executed
+ * @param {string} code - source code to execute
  * @returns {Promise<{success:boolean, output?:string, error?: string}>}
  */
 export async function executeCode(language, code) {
   try {
-    const languageConfig = LANGUAGE_VERSIONS[language];
+    const languageConfig = LANGUAGE_MAP[language];
 
     if (!languageConfig) {
       return {
@@ -24,17 +25,17 @@ export async function executeCode(language, code) {
       };
     }
 
-    const response = await fetch(`${PISTON_API}/execute`, {
+    const response = await fetch(ONECOMPILER_API, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "X-API-Key": API_KEY,
       },
       body: JSON.stringify({
         language: languageConfig.language,
-        version: languageConfig.version,
         files: [
           {
-            name: `main.${getFileExtension(language)}`,
+            name: `main.${languageConfig.extension}`,
             content: code,
           },
         ],
@@ -50,20 +51,26 @@ export async function executeCode(language, code) {
 
     const data = await response.json();
 
-    const output = data.run.output || "";
-    const stderr = data.run.stderr || "";
+    if (data.status !== "success") {
+       return {
+        success: false,
+        output: data.stdout || "",
+        error: data.exception || data.stderr || "Execution failed",
+      };
+    }
 
+    const stderr = data.stderr || "";
     if (stderr) {
       return {
         success: false,
-        output: output,
+        output: data.stdout || "",
         error: stderr,
       };
     }
 
     return {
       success: true,
-      output: output || "No output",
+      output: data.stdout || "No output",
     };
   } catch (error) {
     return {
@@ -71,14 +78,4 @@ export async function executeCode(language, code) {
       error: `Failed to execute code: ${error.message}`,
     };
   }
-}
-
-function getFileExtension(language) {
-  const extensions = {
-    javascript: "js",
-    python: "py",
-    java: "java",
-  };
-
-  return extensions[language] || "txt";
 }

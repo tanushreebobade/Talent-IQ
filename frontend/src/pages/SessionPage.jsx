@@ -3,11 +3,10 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useEndSession, useJoinSession, useSessionById } from "../hooks/useSessions";
 import { PROBLEMS } from "../data/problems";
-import { executeCode } from "../lib/piston";
+import { executeCode } from "../lib/compiler";
 import Navbar from "../components/Navbar";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { getDifficultyBadgeClass } from "../lib/utils";
-import { Loader2Icon, LogOutIcon, PhoneOffIcon } from "lucide-react";
+import { Loader2Icon, LogOutIcon, PhoneOffIcon, Code2Icon } from "lucide-react";
 import CodeEditorPanel from "../components/CodeEditorPanel";
 import OutputPanel from "../components/OutputPanel";
 
@@ -52,11 +51,9 @@ function SessionPage() {
     if (isHost || isParticipant) return;
 
     joinSessionMutation.mutate(id, { onSuccess: refetch });
-
-    // remove the joinSessionMutation, refetch from dependencies to avoid infinite loop
   }, [session, user, loadingSession, isHost, isParticipant, id]);
 
-  // redirect the "participant" when session ends
+  // redirect the participant when session ends
   useEffect(() => {
     if (!session || loadingSession) return;
 
@@ -73,7 +70,6 @@ function SessionPage() {
   const handleLanguageChange = (e) => {
     const newLang = e.target.value;
     setSelectedLanguage(newLang);
-    // use problem-specific starter code
     const starterCode = problemData?.starterCode?.[newLang] || "";
     setCode(starterCode);
     setOutput(null);
@@ -90,80 +86,92 @@ function SessionPage() {
 
   const handleEndSession = () => {
     if (confirm("Are you sure you want to end this session? All participants will be notified.")) {
-      // this will navigate the HOST to dashboard
       endSessionMutation.mutate(id, { onSuccess: () => navigate("/dashboard") });
     }
   };
 
+  const getDifficultyColor = (diff) => {
+    switch (diff?.toLowerCase()) {
+      case "easy":
+        return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
+      case "medium":
+        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30";
+      case "hard":
+        return "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30";
+      default:
+        return "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-500/30";
+    }
+  };
+
   return (
-    <div className="h-screen bg-base-100 flex flex-col">
+    <div className="h-screen bg-[#fcfcfc] dark:bg-[#1a1e1d] text-[#222b2a] dark:text-zinc-100 flex flex-col font-sans transition-colors">
       <Navbar />
 
-      <div className="flex-1">
+      <div className="flex-1 overflow-hidden">
         <PanelGroup direction="horizontal">
           {/* LEFT PANEL - CODE EDITOR & PROBLEM DETAILS */}
-          <Panel defaultSize={50} minSize={30}>
+          <Panel defaultSize={55} minSize={35}>
             <PanelGroup direction="vertical">
-              {/* PROBLEM DSC PANEL */}
-              <Panel defaultSize={50} minSize={20}>
-                <div className="h-full overflow-y-auto bg-base-200">
+              {/* PROBLEM DESC PANEL */}
+              <Panel defaultSize={45} minSize={20}>
+                <div className="h-full overflow-y-auto bg-[#fcfcfc] dark:bg-[#1a1e1d] text-[#222b2a] dark:text-zinc-100 transition-colors">
                   {/* HEADER SECTION */}
-                  <div className="p-6 bg-base-100 border-b border-base-300">
-                    <div className="flex items-start justify-between mb-3">
+                  <div className="p-5 bg-white dark:bg-white/5 border-b border-[#222b2a]/10 dark:border-white/10">
+                    <div className="flex items-start justify-between gap-4 mb-2">
                       <div>
-                        <h1 className="text-3xl font-bold text-base-content">
+                        <h1 className="text-2xl font-bold text-[#222b2a] dark:text-white tracking-tight">
                           {session?.problem || "Loading..."}
                         </h1>
-                        {problemData?.category && (
-                          <p className="text-base-content/60 mt-1">{problemData.category}</p>
-                        )}
-                        <p className="text-base-content/60 mt-2">
+                        <p className="text-xs text-[#222b2a]/60 dark:text-zinc-400 mt-1 font-medium">
                           Host: {session?.host?.name || "Loading..."} •{" "}
-                          {session?.participant ? 2 : 1}/2 participants
+                          {session?.participant ? "2/2 Participants" : "1/2 Participant"}
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={`badge badge-lg ${getDifficultyBadgeClass(
-                            session?.difficulty
-                          )}`}
-                        >
-                          {session?.difficulty.slice(0, 1).toUpperCase() +
-                            session?.difficulty.slice(1) || "Easy"}
-                        </span>
+                      <div className="flex items-center gap-2">
+                        {session?.difficulty && (
+                          <span
+                            className={`text-xs font-semibold px-2.5 py-0.5 rounded border capitalize ${getDifficultyColor(
+                              session.difficulty
+                            )}`}
+                          >
+                            {session.difficulty}
+                          </span>
+                        )}
                         {isHost && session?.status === "active" && (
                           <button
                             onClick={handleEndSession}
                             disabled={endSessionMutation.isPending}
-                            className="btn btn-error btn-sm gap-2"
+                            className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs rounded transition-colors flex items-center gap-1.5 shadow-sm"
                           >
                             {endSessionMutation.isPending ? (
-                              <Loader2Icon className="w-4 h-4 animate-spin" />
+                              <Loader2Icon className="w-3.5 h-3.5 animate-spin" />
                             ) : (
-                              <LogOutIcon className="w-4 h-4" />
+                              <LogOutIcon className="w-3.5 h-3.5" />
                             )}
                             End Session
                           </button>
                         )}
                         {session?.status === "completed" && (
-                          <span className="badge badge-ghost badge-lg">Completed</span>
+                          <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                            Completed
+                          </span>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-6 space-y-6">
+                  <div className="p-5 space-y-5">
                     {/* problem desc */}
                     {problemData?.description && (
-                      <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-base-300">
-                        <h2 className="text-xl font-bold mb-4 text-base-content">Description</h2>
-                        <div className="space-y-3 text-base leading-relaxed">
-                          <p className="text-base-content/90">{problemData.description.text}</p>
+                      <div className="p-4 rounded-lg border border-[#222b2a]/10 dark:border-white/10 bg-white dark:bg-white/5">
+                        <h2 className="text-sm font-bold text-[#222b2a] dark:text-white mb-2">
+                          Description
+                        </h2>
+                        <div className="space-y-2 text-xs text-[#222b2a]/80 dark:text-zinc-300 leading-relaxed">
+                          <p>{problemData.description.text}</p>
                           {problemData.description.notes?.map((note, idx) => (
-                            <p key={idx} className="text-base-content/90">
-                              {note}
-                            </p>
+                            <p key={idx}>{note}</p>
                           ))}
                         </div>
                       </div>
@@ -171,65 +179,43 @@ function SessionPage() {
 
                     {/* examples section */}
                     {problemData?.examples && problemData.examples.length > 0 && (
-                      <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-base-300">
-                        <h2 className="text-xl font-bold mb-4 text-base-content">Examples</h2>
+                      <div className="p-4 rounded-lg border border-[#222b2a]/10 dark:border-white/10 bg-white dark:bg-white/5">
+                        <h2 className="text-sm font-bold text-[#222b2a] dark:text-white mb-3">
+                          Examples
+                        </h2>
 
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                           {problemData.examples.map((example, idx) => (
-                            <div key={idx}>
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="badge badge-sm">{idx + 1}</span>
-                                <p className="font-semibold text-base-content">Example {idx + 1}</p>
-                              </div>
-                              <div className="bg-base-200 rounded-lg p-4 font-mono text-sm space-y-1.5">
+                            <div key={idx} className="space-y-1.5">
+                              <span className="text-[11px] font-semibold text-[#83a971]">
+                                Example {idx + 1}
+                              </span>
+                              <div className="p-3 rounded bg-[#222b2a] text-white font-mono text-xs space-y-1">
                                 <div className="flex gap-2">
-                                  <span className="text-primary font-bold min-w-[70px]">
+                                  <span className="text-[#83a971] font-semibold min-w-[50px]">
                                     Input:
                                   </span>
-                                  <span>{example.input}</span>
+                                  <span className="text-zinc-200">{example.input}</span>
                                 </div>
                                 <div className="flex gap-2">
-                                  <span className="text-secondary font-bold min-w-[70px]">
+                                  <span className="text-amber-400 font-semibold min-w-[50px]">
                                     Output:
                                   </span>
-                                  <span>{example.output}</span>
+                                  <span className="text-zinc-200">{example.output}</span>
                                 </div>
-                                {example.explanation && (
-                                  <div className="pt-2 border-t border-base-300 mt-2">
-                                    <span className="text-base-content/60 font-sans text-xs">
-                                      <span className="font-semibold">Explanation:</span>{" "}
-                                      {example.explanation}
-                                    </span>
-                                  </div>
-                                )}
                               </div>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
-
-                    {/* Constraints */}
-                    {problemData?.constraints && problemData.constraints.length > 0 && (
-                      <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-base-300">
-                        <h2 className="text-xl font-bold mb-4 text-base-content">Constraints</h2>
-                        <ul className="space-y-2 text-base-content/90">
-                          {problemData.constraints.map((constraint, idx) => (
-                            <li key={idx} className="flex gap-2">
-                              <span className="text-primary">•</span>
-                              <code className="text-sm">{constraint}</code>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
                   </div>
                 </div>
               </Panel>
 
-              <PanelResizeHandle className="h-2 bg-base-300 hover:bg-primary transition-colors cursor-row-resize" />
+              <PanelResizeHandle className="h-1.5 bg-[#222b2a]/10 dark:bg-white/10 hover:bg-[#83a971] transition-colors cursor-row-resize" />
 
-              <Panel defaultSize={50} minSize={20}>
+              <Panel defaultSize={55} minSize={25}>
                 <PanelGroup direction="vertical">
                   <Panel defaultSize={70} minSize={30}>
                     <CodeEditorPanel
@@ -242,7 +228,7 @@ function SessionPage() {
                     />
                   </Panel>
 
-                  <PanelResizeHandle className="h-2 bg-base-300 hover:bg-primary transition-colors cursor-row-resize" />
+                  <PanelResizeHandle className="h-1.5 bg-[#222b2a]/10 dark:bg-white/10 hover:bg-[#83a971] transition-colors cursor-row-resize" />
 
                   <Panel defaultSize={30} minSize={15}>
                     <OutputPanel output={output} />
@@ -252,28 +238,28 @@ function SessionPage() {
             </PanelGroup>
           </Panel>
 
-          <PanelResizeHandle className="w-2 bg-base-300 hover:bg-primary transition-colors cursor-col-resize" />
+          <PanelResizeHandle className="w-1.5 bg-[#222b2a]/10 dark:bg-white/10 hover:bg-[#83a971] transition-colors cursor-col-resize" />
 
           {/* RIGHT PANEL - VIDEO CALLS & CHAT */}
-          <Panel defaultSize={50} minSize={30}>
-            <div className="h-full bg-base-200 p-4 overflow-auto">
+          <Panel defaultSize={45} minSize={30}>
+            <div className="h-full bg-[#1a1e1d] p-3 overflow-auto">
               {isInitializingCall ? (
                 <div className="h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <Loader2Icon className="w-12 h-12 mx-auto animate-spin text-primary mb-4" />
-                    <p className="text-lg">Connecting to video call...</p>
+                  <div className="text-center text-white">
+                    <Loader2Icon className="w-8 h-8 mx-auto animate-spin text-[#83a971] mb-3" />
+                    <p className="text-sm font-medium">Connecting to video call...</p>
                   </div>
                 </div>
               ) : !streamClient || !call ? (
                 <div className="h-full flex items-center justify-center">
-                  <div className="card bg-base-100 shadow-xl max-w-md">
-                    <div className="card-body items-center text-center">
-                      <div className="w-24 h-24 bg-error/10 rounded-full flex items-center justify-center mb-4">
-                        <PhoneOffIcon className="w-12 h-12 text-error" />
-                      </div>
-                      <h2 className="card-title text-2xl">Connection Failed</h2>
-                      <p className="text-base-content/70">Unable to connect to the video call</p>
+                  <div className="p-6 rounded-lg border border-white/10 bg-[#222b2a] max-w-sm text-center">
+                    <div className="w-12 h-12 mx-auto bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mb-3">
+                      <PhoneOffIcon className="w-6 h-6" />
                     </div>
+                    <h2 className="text-lg font-bold text-white mb-1">Connection Failed</h2>
+                    <p className="text-xs text-zinc-400">
+                      Unable to connect to the video service. Please refresh or try again.
+                    </p>
                   </div>
                 </div>
               ) : (

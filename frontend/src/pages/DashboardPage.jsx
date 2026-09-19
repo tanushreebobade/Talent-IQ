@@ -9,6 +9,7 @@ import StatsCards from "../components/StatsCards";
 import ActiveSessions from "../components/ActiveSessions";
 import RecentSessions from "../components/RecentSessions";
 import CreateSessionModal from "../components/CreateSessionModal";
+import Footer from "../components/Footer";
 
 function DashboardPage() {
   const navigate = useNavigate();
@@ -48,28 +49,29 @@ function DashboardPage() {
   };
 
   return (
-    <>
-      <div className="min-h-screen bg-base-300">
-        <Navbar />
+    <div className="min-h-screen bg-[#fcfcfc] dark:bg-[#1a1e1d] text-[#222b2a] dark:text-zinc-100 flex flex-col font-sans transition-colors">
+      <Navbar />
+
+      {/* Main Content Layout (1100-1200px centered) */}
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6">
         <WelcomeSection onCreateSession={() => setShowCreateModal(true)} />
 
-        {/* Grid layout */}
-        <div className="container mx-auto px-6 pb-16">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <StatsCards
-              activeSessionsCount={activeSessions.length}
-              recentSessionsCount={recentSessions.length}
-            />
-            <ActiveSessions
-              sessions={activeSessions}
-              isLoading={loadingActiveSessions}
-              isUserInSession={isUserInSession}
-            />
-          </div>
+        <StatsCards
+          activeSessionsCount={activeSessions.length}
+          recentSessionsCount={recentSessions.length}
+        />
 
-          <RecentSessions sessions={recentSessions} isLoading={loadingRecentSessions} />
-        </div>
-      </div>
+        <ActiveSessions
+          sessions={activeSessions}
+          isLoading={loadingActiveSessions}
+          isUserInSession={isUserInSession}
+          onCreateSession={() => setShowCreateModal(true)}
+        />
+
+        <RecentSessions sessions={recentSessions} isLoading={loadingRecentSessions} />
+      </main>
+
+      <Footer />
 
       <CreateSessionModal
         isOpen={showCreateModal}
@@ -79,7 +81,7 @@ function DashboardPage() {
         onCreateRoom={handleCreateRoom}
         isCreating={createSessionMutation.isPending}
       />
-    </>
+    </div>
   );
 }
 

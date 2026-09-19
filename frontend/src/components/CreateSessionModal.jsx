@@ -1,4 +1,4 @@
-import { Code2Icon, LoaderIcon, PlusIcon } from "lucide-react";
+import { Code2Icon, LoaderIcon, PlusIcon, XIcon } from "lucide-react";
 import { PROBLEMS } from "../data/problems";
 
 function CreateSessionModal({
@@ -14,20 +14,33 @@ function CreateSessionModal({
   if (!isOpen) return null;
 
   return (
-    <div className="modal modal-open">
-      <div className="modal-box max-w-2xl">
-        <h3 className="font-bold text-2xl mb-6">Create New Session</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#222b2a]/60 backdrop-blur-xs animate-in fade-in duration-150">
+      <div
+        className="w-full max-w-lg bg-[#fcfcfc] dark:bg-[#1a1e1d] rounded-lg border border-[#222b2a]/15 dark:border-white/15 shadow-xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal Header */}
+        <div className="px-6 py-4 border-b border-[#222b2a]/10 dark:border-white/10 flex items-center justify-between">
+          <h3 className="font-bold text-lg text-[#222b2a] dark:text-white">
+            Create Coding Session
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1 rounded text-[#222b2a]/50 dark:text-zinc-400 hover:text-[#222b2a] dark:hover:text-white hover:bg-[#222b2a]/5 dark:hover:bg-white/5 transition-colors"
+          >
+            <XIcon className="w-5 h-5" />
+          </button>
+        </div>
 
-        <div className="space-y-8">
-          {/* PROBLEM SELECTION */}
+        {/* Modal Body */}
+        <div className="p-6 space-y-6">
           <div className="space-y-2">
-            <label className="label">
-              <span className="label-text font-semibold">Select Problem</span>
-              <span className="label-text-alt text-error">*</span>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-[#222b2a]/70 dark:text-zinc-300">
+              Select Coding Problem <span className="text-rose-500">*</span>
             </label>
 
             <select
-              className="select w-full"
+              className="w-full px-3 py-2 rounded-md border border-[#222b2a]/15 dark:border-white/15 bg-white dark:bg-white/5 text-[#222b2a] dark:text-white text-sm focus:outline-none focus:border-[#83a971] transition-colors"
               value={roomConfig.problem}
               onChange={(e) => {
                 const selectedProblem = problems.find((p) => p.title === e.target.value);
@@ -42,7 +55,7 @@ function CreateSessionModal({
               </option>
 
               {problems.map((problem) => (
-                <option key={problem.id} value={problem.title}>
+                <option key={problem.id} value={problem.title} className="dark:bg-[#1a1e1d]">
                   {problem.title} ({problem.difficulty})
                 </option>
               ))}
@@ -51,43 +64,48 @@ function CreateSessionModal({
 
           {/* ROOM SUMMARY */}
           {roomConfig.problem && (
-            <div className="alert alert-success">
-              <Code2Icon className="size-5" />
-              <div>
-                <p className="font-semibold">Room Summary:</p>
-                <p>
-                  Problem: <span className="font-medium">{roomConfig.problem}</span>
+            <div className="p-4 rounded-md border border-[#83a971]/30 bg-[#83a971]/10 text-xs text-[#222b2a] dark:text-zinc-200 flex items-start gap-3">
+              <Code2Icon className="w-5 h-5 text-[#83a971] shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-semibold text-sm text-[#222b2a] dark:text-white">
+                  Session Details:
                 </p>
                 <p>
-                  Max Participants: <span className="font-medium">2 (1-on-1 session)</span>
+                  Problem: <span className="font-semibold">{roomConfig.problem}</span>
+                </p>
+                <p>
+                  Capacity: <span className="font-semibold">2 Participants (1-on-1 session)</span>
                 </p>
               </div>
             </div>
           )}
         </div>
 
-        <div className="modal-action">
-          <button className="btn btn-ghost" onClick={onClose}>
+        {/* Modal Footer */}
+        <div className="px-6 py-4 border-t border-[#222b2a]/10 dark:border-white/10 bg-[#222b2a]/5 dark:bg-white/5 flex items-center justify-end gap-3">
+          <button
+            className="px-4 py-2 rounded-md text-sm font-medium text-[#222b2a]/70 dark:text-zinc-300 hover:text-[#222b2a] dark:hover:text-white transition-colors"
+            onClick={onClose}
+          >
             Cancel
           </button>
 
           <button
-            className="btn btn-primary gap-2"
+            className="px-5 py-2 bg-[#83a971] hover:bg-[#729860] disabled:bg-zinc-400 text-white font-medium text-sm rounded-md transition-colors flex items-center gap-2 shadow-sm"
             onClick={onCreateRoom}
             disabled={isCreating || !roomConfig.problem}
           >
             {isCreating ? (
-              <LoaderIcon className="size-5 animate-spin" />
+              <LoaderIcon className="w-4 h-4 animate-spin" />
             ) : (
-              <PlusIcon className="size-5" />
+              <PlusIcon className="w-4 h-4" />
             )}
-
-            {isCreating ? "Creating..." : "Create"}
+            <span>{isCreating ? "Creating..." : "Create Session"}</span>
           </button>
         </div>
       </div>
-      <div className="modal-backdrop" onClick={onClose}></div>
     </div>
   );
 }
+
 export default CreateSessionModal;
