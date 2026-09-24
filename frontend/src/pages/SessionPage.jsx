@@ -12,6 +12,8 @@ import OutputPanel from "../components/OutputPanel";
 
 import useStreamClient from "../hooks/useStreamClient";
 import { StreamCall, StreamVideo } from "@stream-io/video-react-sdk";
+import AICopilotPanel from "../components/AICopilotPanel";
+import { BotIcon, BookOpenIcon } from "lucide-react";
 import VideoCallUI from "../components/VideoCallUI";
 import { useWindowSize } from "../hooks/useWindowSize";
 
@@ -47,6 +49,7 @@ function SessionPage() {
 
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [code, setCode] = useState(problemData?.starterCode?.[selectedLanguage] || "");
+  const [leftTab, setLeftTab] = useState("problem"); // "problem" | "ai"
 
   // auto-join session if user is not already a participant and not the host
   useEffect(() => {
@@ -115,17 +118,17 @@ function SessionPage() {
           {/* LEFT PANEL - CODE EDITOR & PROBLEM DETAILS */}
           <Panel defaultSize={55} minSize={35}>
             <PanelGroup direction="vertical">
-              {/* PROBLEM DESC PANEL */}
+              {/* PROBLEM DESC / AI PANEL */}
               <Panel defaultSize={45} minSize={20}>
-                <div className="h-full overflow-y-auto bg-[#fcfcfc] dark:bg-[#1a1e1d] text-[#222b2a] dark:text-zinc-100 transition-colors">
+                <div className="h-full overflow-y-auto bg-[#fcfcfc] dark:bg-[#1a1e1d] text-[#222b2a] dark:text-zinc-100 transition-colors flex flex-col">
                   {/* HEADER SECTION */}
-                  <div className="p-5 bg-white dark:bg-white/5 border-b border-[#222b2a]/10 dark:border-white/10">
-                    <div className="flex items-start justify-between gap-4 mb-2">
+                  <div className="p-4 bg-white dark:bg-white/5 border-b border-[#222b2a]/10 dark:border-white/10 flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-4">
                       <div>
-                        <h1 className="text-2xl font-bold text-[#222b2a] dark:text-white tracking-tight">
+                        <h1 className="text-xl font-bold text-[#222b2a] dark:text-white tracking-tight">
                           {session?.problem || "Loading..."}
                         </h1>
-                        <p className="text-xs text-[#222b2a]/60 dark:text-zinc-400 mt-1 font-medium">
+                        <p className="text-xs text-[#222b2a]/60 dark:text-zinc-400 mt-0.5 font-medium">
                           Host: {session?.host?.name || "Loading..."} •{" "}
                           {session?.participant ? "2/2 Participants" : "1/2 Participant"}
                         </p>
@@ -155,61 +158,95 @@ function SessionPage() {
                             End Session
                           </button>
                         )}
-                        {session?.status === "completed" && (
-                          <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-                            Completed
-                          </span>
-                        )}
                       </div>
+                    </div>
+
+                    {/* Tab Selection Bar */}
+                    <div className="flex items-center gap-2 border-t border-[#222b2a]/10 dark:border-white/10 pt-2">
+                      <button
+                        onClick={() => setLeftTab("problem")}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                          leftTab === "problem"
+                            ? "bg-[#83a971] text-white shadow-xs"
+                            : "bg-zinc-100 dark:bg-white/5 text-[#222b2a]/70 dark:text-zinc-400 hover:text-[#222b2a] dark:hover:text-white border border-[#222b2a]/5 dark:border-white/5"
+                        }`}
+                      >
+                        <BookOpenIcon className="w-3.5 h-3.5" />
+                        Problem Details
+                      </button>
+
+                      <button
+                        onClick={() => setLeftTab("ai")}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                          leftTab === "ai"
+                            ? "bg-[#83a971] text-white shadow-xs"
+                            : "bg-zinc-100 dark:bg-white/5 text-[#222b2a]/70 dark:text-zinc-400 hover:text-[#222b2a] dark:hover:text-white border border-[#222b2a]/5 dark:border-white/5"
+                        }`}
+                      >
+                        <BotIcon className="w-3.5 h-3.5 text-[#83a971] dark:text-emerald-300" />
+                        AI Mentor & Hints
+                      </button>
                     </div>
                   </div>
 
-                  <div className="p-5 space-y-5">
-                    {/* problem desc */}
-                    {problemData?.description && (
-                      <div className="p-4 rounded-lg border border-[#222b2a]/10 dark:border-white/10 bg-white dark:bg-white/5">
-                        <h2 className="text-sm font-bold text-[#222b2a] dark:text-white mb-2">
-                          Description
-                        </h2>
-                        <div className="space-y-2 text-xs text-[#222b2a]/80 dark:text-zinc-300 leading-relaxed">
-                          <p>{problemData.description.text}</p>
-                          {problemData.description.notes?.map((note, idx) => (
-                            <p key={idx}>{note}</p>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* examples section */}
-                    {problemData?.examples && problemData.examples.length > 0 && (
-                      <div className="p-4 rounded-lg border border-[#222b2a]/10 dark:border-white/10 bg-white dark:bg-white/5">
-                        <h2 className="text-sm font-bold text-[#222b2a] dark:text-white mb-3">
-                          Examples
-                        </h2>
-
-                        <div className="space-y-3">
-                          {problemData.examples.map((example, idx) => (
-                            <div key={idx} className="space-y-1.5">
-                              <span className="text-[11px] font-semibold text-[#83a971]">
-                                Example {idx + 1}
-                              </span>
-                              <div className="p-3 rounded bg-[#222b2a] text-white font-mono text-xs space-y-1">
-                                <div className="flex gap-2">
-                                  <span className="text-[#83a971] font-semibold min-w-[50px]">
-                                    Input:
-                                  </span>
-                                  <span className="text-zinc-200">{example.input}</span>
-                                </div>
-                                <div className="flex gap-2">
-                                  <span className="text-amber-400 font-semibold min-w-[50px]">
-                                    Output:
-                                  </span>
-                                  <span className="text-zinc-200">{example.output}</span>
-                                </div>
-                              </div>
+                  {/* Panel Content Body */}
+                  <div className="flex-1 p-4 overflow-y-auto">
+                    {leftTab === "ai" ? (
+                      <AICopilotPanel
+                        problem={problemData || { title: session?.problem, description: "" }}
+                        code={code}
+                        selectedLanguage={selectedLanguage}
+                        output={output}
+                      />
+                    ) : (
+                      <div className="space-y-5">
+                        {/* problem desc */}
+                        {problemData?.description && (
+                          <div className="p-4 rounded-lg border border-[#222b2a]/10 dark:border-white/10 bg-white dark:bg-white/5">
+                            <h2 className="text-sm font-bold text-[#222b2a] dark:text-white mb-2">
+                              Description
+                            </h2>
+                            <div className="space-y-2 text-xs text-[#222b2a]/80 dark:text-zinc-300 leading-relaxed">
+                              <p>{problemData.description.text}</p>
+                              {problemData.description.notes?.map((note, idx) => (
+                                <p key={idx}>{note}</p>
+                              ))}
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        )}
+
+                        {/* examples section */}
+                        {problemData?.examples && problemData.examples.length > 0 && (
+                          <div className="p-4 rounded-lg border border-[#222b2a]/10 dark:border-white/10 bg-white dark:bg-white/5">
+                            <h2 className="text-sm font-bold text-[#222b2a] dark:text-white mb-3">
+                              Examples
+                            </h2>
+
+                            <div className="space-y-3">
+                              {problemData.examples.map((example, idx) => (
+                                <div key={idx} className="space-y-1.5">
+                                  <span className="text-[11px] font-semibold text-[#83a971]">
+                                    Example {idx + 1}
+                                  </span>
+                                  <div className="p-3 rounded bg-[#222b2a] text-white font-mono text-xs space-y-1">
+                                    <div className="flex gap-2">
+                                      <span className="text-[#83a971] font-semibold min-w-[50px]">
+                                        Input:
+                                      </span>
+                                      <span className="text-zinc-200">{example.input}</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <span className="text-amber-400 font-semibold min-w-[50px]">
+                                        Output:
+                                      </span>
+                                      <span className="text-zinc-200">{example.output}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

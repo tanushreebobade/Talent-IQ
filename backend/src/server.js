@@ -13,6 +13,7 @@ import chatRoutes from "./routes/chatRoutes.js";
 import sessionRoutes from "./routes/sessionRoute.js";
 import compilerRoutes from "./routes/compilerRoute.js";
 import submissionRoutes from "./routes/submissionRoute.js";
+import aiRoutes from "./routes/aiRoute.js";
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/sessions", sessionRoutes);
 app.use("/api/code", compilerRoutes);
 app.use("/api/submissions", submissionRoutes);
+app.use("/api/ai", aiRoutes);
 
 // Health check endpoint for cloud deployment monitors
 app.get("/health", (req, res) => {
